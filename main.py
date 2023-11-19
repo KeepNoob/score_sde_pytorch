@@ -37,6 +37,7 @@ flags.mark_flags_as_required(["workdir", "config", "mode"])
 def main(argv):
   if FLAGS.mode == "train":
     # Create the working directory
+    print("Create the working directory: {FLAGS.workdir}")
     tf.io.gfile.makedirs(FLAGS.workdir)
     # Set logger so that it outputs to both console and file
     # Make logging work for both disk and Google Cloud Storage
@@ -48,9 +49,11 @@ def main(argv):
     logger.addHandler(handler)
     logger.setLevel('INFO')
     # Run the training pipeline
+    print(f"Run the training pipeline: run_lib.train()")
     run_lib.train(FLAGS.config, FLAGS.workdir)
   elif FLAGS.mode == "eval":
     # Run the evaluation pipeline
+    print("Run the evaluation pipeline: run_lib.evaluate(")
     run_lib.evaluate(FLAGS.config, FLAGS.workdir, FLAGS.eval_folder)
   else:
     raise ValueError(f"Mode {FLAGS.mode} not recognized.")

@@ -54,14 +54,18 @@ def train(config, workdir):
   """
 
   # Create directories for experimental logs
+  print(f"Create directories for experimental logs:")
   sample_dir = os.path.join(workdir, "samples")
+  print(f"sample_dir: {sample_dir}")
   tf.io.gfile.makedirs(sample_dir)
 
   tb_dir = os.path.join(workdir, "tensorboard")
+  print(f"tb_dir: {tb_dir}")
   tf.io.gfile.makedirs(tb_dir)
   writer = tensorboard.SummaryWriter(tb_dir)
 
   # Initialize model.
+  print("Initialize model.")
   score_model = mutils.create_model(config)
   ema = ExponentialMovingAverage(score_model.parameters(), decay=config.model.ema_rate)
   optimizer = losses.get_optimizer(config, score_model.parameters())
@@ -69,8 +73,10 @@ def train(config, workdir):
 
   # Create checkpoints directory
   checkpoint_dir = os.path.join(workdir, "checkpoints")
+  print(f"Create checkpoints directory: {checkpoint_dir}")
   # Intermediate checkpoints to resume training after pre-emption in cloud environments
   checkpoint_meta_dir = os.path.join(workdir, "checkpoints-meta", "checkpoint.pth")
+  print(f"Intermediate checkpoints to resume training after pre-emption in cloud environments: {checkpoint_meta_dir}")
   tf.io.gfile.makedirs(checkpoint_dir)
   tf.io.gfile.makedirs(os.path.dirname(checkpoint_meta_dir))
   # Resume training when intermediate checkpoints are detected
@@ -78,15 +84,18 @@ def train(config, workdir):
   initial_step = int(state['step'])
 
   # Build data iterators
+  print(f"Build data iterators:")
   train_ds, eval_ds, _ = datasets.get_dataset(config,
                                               uniform_dequantization=config.data.uniform_dequantization)
   train_iter = iter(train_ds)  # pytype: disable=wrong-arg-types
   eval_iter = iter(eval_ds)  # pytype: disable=wrong-arg-types
   # Create data normalizer and its inverse
+  print(f"Create data normalizer and its inverse")
   scaler = datasets.get_data_scaler(config)
   inverse_scaler = datasets.get_data_inverse_scaler(config)
 
   # Setup SDEs
+  print(f"Setup SDEs: {config.training.sde.lower()} ")
   if config.training.sde.lower() == 'vpsde':
     sde = sde_lib.VPSDE(beta_min=config.model.beta_min, beta_max=config.model.beta_max, N=config.model.num_scales)
     sampling_eps = 1e-3
@@ -100,6 +109,7 @@ def train(config, workdir):
     raise NotImplementedError(f"SDE {config.training.sde} unknown.")
 
   # Build one-step training and evaluation functions
+  print(f"Build one-step training and evaluation functions")
   optimize_fn = losses.optimization_manager(config)
   continuous = config.training.continuous
   reduce_mean = config.training.reduce_mean
@@ -112,6 +122,7 @@ def train(config, workdir):
                                     likelihood_weighting=likelihood_weighting)
 
   # Building sampling functions
+  print(f"Building sampling functions")
   if config.training.snapshot_sampling:
     sampling_shape = (config.training.batch_size, config.data.num_channels,
                       config.data.image_size, config.data.image_size)
